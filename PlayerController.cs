@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    Rigidbody2D rb;
+    private Rigidbody2D rb;
+    private BoxCollider2D bc;
 
     public float speed;
     public float jumpForce;
@@ -13,8 +14,6 @@ public class PlayerController : MonoBehaviour
     public float highJumpMultiplier = 0.5f;
 
     bool isGrounded = false;
-    public Transform isGroundedChecker;
-    public float checkGroundRadius;
     public LayerMask groundLayer;
 
     public float rememberGroundedFor;
@@ -32,6 +31,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        bc = GetComponent<BoxCollider2D>();
 
         additionalJumps = defaultAdditionalJumps;
         lastTimeJumpPressed = -1;
@@ -104,10 +104,15 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void CheckIfGrounded() {
-        Collider2D colliders = Physics2D.OverlapCircle(isGroundedChecker.position, checkGroundRadius, groundLayer);
+    void CheckIfGrounded()
+    {
+        float testHeight = 0.1f;
+        Vector2 size = bc.bounds.size;
+        size.Scale(new Vector2(0.98f,1.0f));
+        RaycastHit2D cast =
+            Physics2D.BoxCast(bc.bounds.center, size, 0f, Vector2.down, testHeight, groundLayer);
 
-        if (colliders != null) {
+        if (cast.collider != null) {
             isGrounded = true;
             additionalJumps = defaultAdditionalJumps;
         } else {
@@ -116,15 +121,10 @@ public class PlayerController : MonoBehaviour
             }
             isGrounded = false;
         }
-    }
 
-    void OnCollisionStay(Collision collisionInfo)
-    {
-        // Debug-draw all contact points and normals
-        foreach (ContactPoint contact in collisionInfo.contacts)
-        {
-            Debug.DrawRay(contact.point, contact.normal, Color.white);
-        }
+        Debug.DrawRay(bc.bounds.center + new Vector3(bc.bounds.extents.x, 0),
+            Vector2.down * (bc.bounds.extents.y + testHeight), Color.green);
+        Debug.DrawRay(bc.bounds.center - new Vector3(bc.bounds.extents.x, 0),
+            Vector2.down * (bc.bounds.extents.y + testHeight), Color.green);
     }
-    
 }
